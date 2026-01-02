@@ -105,21 +105,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       </AnimatePresence>
 
       {/* Desktop sidebar */}
-      <motion.aside
-        animate={{ width: sidebarCollapsed ? '80px' : '256px' }}
-        transition={{ duration: 0.3 }}
-        className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:bg-white dark:bg-gray-800 lg:shadow-xl border-r border-gray-200 dark:border-gray-700"
+      <aside
+        className={`hidden lg:block fixed inset-y-0 left-0 z-40 bg-white dark:bg-gray-800 shadow-xl border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        }`}
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-500 to-purple-500">
             {!sidebarCollapsed && (
-              <motion.h1
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-xl font-bold text-white"
-              >
+              <h1 className="text-xl font-bold text-white">
                 TaskNest
-              </motion.h1>
+              </h1>
             )}
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -149,19 +145,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               >
                 <span className="text-xl flex-shrink-0">{item.icon}</span>
                 {!sidebarCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="ml-3 font-medium"
-                  >
+                  <span className="ml-3 font-medium">
                     {item.label}
-                  </motion.span>
+                  </span>
                 )}
               </Link>
             ))}
           </nav>
         </div>
-      </motion.aside>
+      </aside>
 
       {/* Main content area */}
       <div className={sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-64'}>

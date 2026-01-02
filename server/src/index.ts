@@ -17,17 +17,35 @@ const corsOptions = {
       'http://localhost:3000', // Alternative dev port
     ];
 
-    // Add CLIENT_URL from environment if set
+    // Add CLIENT_URL from environment if set (supports comma-separated multiple URLs)
     if (process.env.CLIENT_URL) {
-      allowedOrigins.push(process.env.CLIENT_URL);
+      const clientUrls = process.env.CLIENT_URL.split(',').map(url => url.trim());
+      allowedOrigins.push(...clientUrls);
     }
 
-    // Allow requests with no origin (like mobile apps or curl requests) or same-origin
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // In development, allow all origins for easier testing
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
     }
+
+    // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview deployments (any *.vercel.app domain)
+    if (origin.includes('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    // Reject all other origins
+    console.warn(`⚠️  CORS blocked origin: ${origin}`);
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 };
