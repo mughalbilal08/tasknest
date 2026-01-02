@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 
 interface CreateNotificationParams {
   userId: string;
-  type: 'task_assigned' | 'status_change' | 'comment_added' | 'department_added';
+  type: 'task_assigned' | 'status_change' | 'comment_added' | 'department_added' | 'project_added';
   message: string;
   taskId?: string;
   projectId?: string;
@@ -113,6 +113,21 @@ export const notifyDepartmentAdded = async (
     type: 'department_added',
     message: `${addedByName} added you to department: ${departmentName}`,
     projectId: departmentId,
+    relatedUserId: userId,
+  });
+};
+
+export const notifyProjectAdded = async (
+  projectId: string,
+  projectName: string,
+  userId: string,
+  addedByName: string
+): Promise<void> => {
+  await createNotification({
+    userId,
+    type: 'project_added',
+    message: `${addedByName} added you to project: ${projectName}`,
+    projectId: projectId,
     relatedUserId: userId,
   });
 };

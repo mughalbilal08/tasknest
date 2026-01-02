@@ -1,6 +1,8 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { Project, Department, Task, Comment } from '../models';
 import { AuthRequest } from '../middleware/auth';
+import { notifyProjectAdded, notifyDepartmentAdded } from '../utils/notifications';
 
 // Helper function to check if user has access to department
 const hasDepartmentAccess = async (userId: string, departmentId: string, isAdmin: boolean): Promise<boolean> => {
@@ -193,6 +195,136 @@ export const getProjectById = async (req: AuthRequest, res: Response): Promise<v
     });
   } catch (error: any) {
     console.error('Get project by ID error:', error);
+
+    if (error.name === 'CastError') {
+      res.status(400).json({ error: 'Invalid project ID' });
+      return;
+    }
+
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateProject = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { members } = req.body;
+    const userId = req.user?._id;
+    const userName = req.user?.name || 'Admin';
+
+    if (!userId) {
+      res.status(401).json({ error: 'Authentication required' });
+      return;
+    }
+
+    // Only admins can update projects
+    if (req.user?.role !== 'admin') {
+      res.status(403).json({ error: 'Admin access required to update projects' });
+      return;
+    }
+
+    const project = await Project.findById(id);
+
+    if (!project) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    // Validate members array
+    if (!Array.isArray(members)) {
+      res.status(400).json({ error: 'Members must be an array' });
+      return;
+    }
+
+    // Get current members
+    const currentMemberIds = project.members.map((m) => m.toString());
+    
+    // Get new members (those not in current list)
+    const newMemberIds = members.filter((memberId: string) => !currentMemberIds.includes(memberId.toString()));
+
+    // Get the department for this project
+    const departmentId = (project.department as any)?._id?.toString() || (project.department as any)?.toString();
+    const department = await Department.findById(departmentId);
+
+    if (!department) {
+      res.status(404).json({ error: 'Department not found for this project' });
+      return;
+    }
+
+    // Get current department members
+    const currentDepartmentMemberIds = department.members.map((m) => m.toString());
+
+    // For each new member, check if they need to be added to the department
+    for (const newMemberId of newMemberIds) {
+      const memberIdStr = newMemberId.toString();
+      
+      // If user is not in the department, add them
+      if (!currentDepartmentMemberIds.includes(memberIdStr)) {
+        department.members.push(new mongoose.Types.ObjectId(memberIdStr));
+        currentDepartmentMemberIds.push(memberIdStr);
+
+        // Notify user about being added to department (excluding the one making the update)
+        if (memberIdStr !== userId.toString()) {
+          await notifyDepartmentAdded(
+            departmentId,
+            department.name,
+            memberIdStr,
+            userName
+          );
+        }
+      }
+    }
+
+    // Save department if any members were added
+    if (newMemberIds.length > 0) {
+      await department.save();
+    }
+
+    // Update project members
+    project.members = members;
+    await project.save();
+    await project.populate('members', 'name email');
+    await project.populate('department', 'name');
+
+    // Notify new members about being added to project (excluding the one making the update)
+    for (const newMemberId of newMemberIds) {
+      if (newMemberId.toString() !== userId.toString()) {
+        await notifyProjectAdded(
+          project._id.toString(),
+          project.name,
+          newMemberId.toString(),
+          userName
+        );
+      }
+    }
+
+    res.status(200).json({
+      message: 'Project updated successfully',
+      project: {
+        id: project._id.toString(),
+        name: project.name,
+        description: project.description,
+        department: {
+          id: (project.department as any)?._id?.toString() || (project.department as any)?.toString(),
+          name: (project.department as any)?.name || '',
+        },
+        members: project.members.map((member: any) => ({
+          id: member._id.toString(),
+          name: member.name,
+          email: member.email,
+        })),
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+      },
+    });
+  } catch (error: any) {
+    console.error('Update project error:', error);
+
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((err: any) => err.message);
+      res.status(400).json({ error: messages.join(', ') });
+      return;
+    }
 
     if (error.name === 'CastError') {
       res.status(400).json({ error: 'Invalid project ID' });

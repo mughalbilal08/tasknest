@@ -302,6 +302,16 @@ export const updateTask = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
+    // Check if user can modify this task
+    // Admins can modify any task, regular users can only modify tasks assigned to them
+    if (!isAdmin) {
+      const assignedToId = task.assignedTo ? task.assignedTo.toString() : null;
+      if (!assignedToId || assignedToId !== userId.toString()) {
+        res.status(403).json({ error: 'You can only modify tasks assigned to you' });
+        return;
+      }
+    }
+
     const oldStatus = task.status;
     const oldAssignedTo = task.assignedTo?.toString();
 

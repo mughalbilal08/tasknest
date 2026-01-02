@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
 import { connectDB } from './config/database';
 
 dotenv.config();
@@ -21,6 +22,17 @@ app.use('/api', routes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
+
+// Serve static files from the React app in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from the Vite build directory
+  app.use(express.static(path.join(__dirname, '../../client/dist')));
+
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
+  });
+}
 
 // Connect to MongoDB (non-blocking)
 connectDB().catch(() => {

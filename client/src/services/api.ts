@@ -180,6 +180,18 @@ export const projectApi = {
     });
   },
 
+  updateProject: async (
+    id: string,
+    data: {
+      members: string[];
+    }
+  ): Promise<ProjectResponse> => {
+    return apiRequest<ProjectResponse>(`/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
   deleteProject: async (id: string): Promise<{ message: string }> => {
     return apiRequest<{ message: string }>(`/projects/${id}`, {
       method: 'DELETE',
@@ -319,7 +331,7 @@ export const adminApi = {
 interface Notification {
   id: string;
   user: string;
-  type: 'task_assigned' | 'status_change' | 'comment_added' | 'department_added';
+  type: 'task_assigned' | 'status_change' | 'comment_added' | 'department_added' | 'project_added';
   message: string;
   read: boolean;
   task?: { id: string; title: string };

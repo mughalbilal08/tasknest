@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import AppLayout from '../components/AppLayout';
 import TaskCreateModal from '../components/TaskCreateModal';
 import TaskEditModal from '../components/TaskEditModal';
+import ProjectMembersModal from '../components/ProjectMembersModal';
 import { projectApi, taskApi, Task, User } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,6 +17,7 @@ const ProjectDetail = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [project, setProject] = useState<any>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -67,7 +69,25 @@ const ProjectDetail = () => {
     fetchProjectAndTasks();
   };
 
+  const canEditTask = (task: Task): boolean => {
+    // Admins can edit any task
+    if (isAdmin) return true;
+    
+    // Regular users can only edit tasks assigned to them
+    if (!task.assignedTo) return false;
+    
+    const assignedToId = typeof task.assignedTo === 'string' 
+      ? task.assignedTo 
+      : (task.assignedTo as any).id || (task.assignedTo as any)._id;
+    
+    return assignedToId === user?.id;
+  };
+
   const handleEditTask = (task: Task) => {
+    // Check if user can edit this task
+    if (!canEditTask(task)) {
+      return; // Don't open modal if user can't edit
+    }
     setSelectedTask(task);
     setIsEditModalOpen(true);
   };
@@ -188,12 +208,20 @@ const ProjectDetail = () => {
             </div>
             <div className="flex items-center space-x-3">
               {isAdmin && (
-                <button
-                  onClick={handleDeleteProject}
-                  className="px-4 py-2 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-all shadow-lg"
-                >
-                  🗑️ Delete Project
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsMembersModalOpen(true)}
+                    className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-all shadow-lg"
+                  >
+                    👥 Manage Members
+                  </button>
+                  <button
+                    onClick={handleDeleteProject}
+                    className="px-4 py-2 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-all shadow-lg"
+                  >
+                    🗑️ Delete Project
+                  </button>
+                </>
               )}
               <button
                 onClick={() => setIsModalOpen(true)}
@@ -295,14 +323,25 @@ const ProjectDetail = () => {
                         No tasks
                       </div>
                     ) : (
-                      columnTasks.map((task) => (
-                        <div
-                          key={task._id}
-                          className="group bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 shadow-md hover:shadow-xl transition-all cursor-pointer transform hover:scale-[1.02] border border-gray-200 dark:border-gray-600"
-                          onClick={() => handleEditTask(task)}
-                        >
-                          <h4 className="font-bold text-gray-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      columnTasks.map((task) => {
+                        const canEdit = canEditTask(task);
+                        return (
+                          <div
+                            key={task._id}
+                            className={`group bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 shadow-md transition-all border border-gray-200 dark:border-gray-600 ${
+                              canEdit
+                                ? 'hover:shadow-xl cursor-pointer transform hover:scale-[1.02]'
+                                : 'opacity-75 cursor-not-allowed'
+                            }`}
+                            onClick={() => handleEditTask(task)}
+                          >
+                          <h4 className={`font-bold text-gray-900 dark:text-white mb-2 transition-colors ${
+                            canEdit ? 'group-hover:text-indigo-600 dark:group-hover:text-indigo-400' : ''
+                          }`}>
                             {task.title}
+                            {!canEdit && (
+                              <span className="ml-2 text-xs text-gray-400">(View Only)</span>
+                            )}
                           </h4>
                           {task.description && (
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
@@ -335,7 +374,8 @@ const ProjectDetail = () => {
                             )}
                           </div>
                         </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>
@@ -380,15 +420,24 @@ const ProjectDetail = () => {
                       </td>
                     </tr>
                   ) : (
-                    tasks.map((task) => (
-                      <tr
-                        key={task._id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
-                        onClick={() => handleEditTask(task)}
-                      >
+                    tasks.map((task) => {
+                      const canEdit = canEditTask(task);
+                      return (
+                        <tr
+                          key={task._id}
+                          className={`transition-colors ${
+                            canEdit
+                              ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'
+                              : 'opacity-75 cursor-not-allowed'
+                          }`}
+                          onClick={() => handleEditTask(task)}
+                        >
                         <td className="px-6 py-4">
                           <div className="text-sm font-bold text-gray-900 dark:text-white">
                             {task.title}
+                            {!canEdit && (
+                              <span className="ml-2 text-xs text-gray-400 font-normal">(View Only)</span>
+                            )}
                           </div>
                           {task.description && (
                             <div className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs mt-1">
@@ -442,7 +491,8 @@ const ProjectDetail = () => {
                           {new Date(task.createdAt).toLocaleDateString()}
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -457,14 +507,25 @@ const ProjectDetail = () => {
                   <p className="text-gray-500 dark:text-gray-400">Create your first task to get started</p>
                 </div>
               ) : (
-                tasks.map((task) => (
-                  <div
-                    key={task._id}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all transform hover:scale-[1.02] border border-gray-200 dark:border-gray-700"
-                    onClick={() => handleEditTask(task)}
-                  >
+                tasks.map((task) => {
+                  const canEdit = canEditTask(task);
+                  return (
+                    <div
+                      key={task._id}
+                      className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 transition-all ${
+                        canEdit
+                          ? 'cursor-pointer hover:shadow-xl transform hover:scale-[1.02]'
+                          : 'opacity-75 cursor-not-allowed'
+                      }`}
+                      onClick={() => handleEditTask(task)}
+                    >
                     <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white flex-1">{task.title}</h3>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white flex-1">
+                        {task.title}
+                        {!canEdit && (
+                          <span className="ml-2 text-xs text-gray-400 font-normal">(View Only)</span>
+                        )}
+                      </h3>
                       <span
                         className={`px-3 py-1 text-xs font-semibold rounded-full border ${getPriorityColor(
                           task.priority
@@ -504,7 +565,8 @@ const ProjectDetail = () => {
                       )}
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </>
@@ -530,6 +592,15 @@ const ProjectDetail = () => {
               projectMembers={(project?.members as User[]) || []}
               onTaskUpdated={handleTaskUpdated}
             />
+            {isAdmin && project && (
+              <ProjectMembersModal
+                isOpen={isMembersModalOpen}
+                onClose={() => setIsMembersModalOpen(false)}
+                projectId={id!}
+                currentMembers={(project?.members as User[]) || []}
+                onMembersUpdated={fetchProjectAndTasks}
+              />
+            )}
           </>
         )}
       </div>

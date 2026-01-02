@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 
 const Landing = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900 relative overflow-hidden">
       {/* Animated background effects */}
@@ -12,16 +15,18 @@ const Landing = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 px-6 py-4">
+      <nav className="relative z-10 px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            className="text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent"
-          >
-            TaskNest
-          </motion.div>
+          <Link to="/">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent"
+            >
+              TaskNest
+            </motion.div>
+          </Link>
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/features" className="text-gray-300 hover:text-white transition-colors">Features</Link>
             <Link to="/contact" className="text-gray-300 hover:text-white transition-colors">Contact</Link>
@@ -38,7 +43,64 @@ const Landing = () => {
               Get Started
             </Link>
           </div>
+          
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden mt-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl overflow-hidden"
+            >
+              <div className="px-4 py-4 space-y-3">
+                <Link
+                  to="/features"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-gray-300 hover:text-white transition-colors py-2"
+                >
+                  Features
+                </Link>
+                <Link
+                  to="/contact"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-gray-300 hover:text-white transition-colors py-2"
+                >
+                  Contact
+                </Link>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block text-gray-300 hover:text-white transition-colors py-2"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all text-center"
+                >
+                  Get Started
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       {/* Hero Section */}
@@ -61,7 +123,7 @@ const Landing = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight"
+            className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 leading-tight px-4"
           >
             Design that drives
             <br />
@@ -75,7 +137,7 @@ const Landing = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto"
+            className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto px-4"
           >
             Transforming teams with innovative and captivating task management solutions.
             <br />
@@ -87,17 +149,17 @@ const Landing = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.5 }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8"
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8 px-4"
           >
             <Link
               to="/signup"
-              className="px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-lg font-semibold rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all shadow-2xl hover:shadow-indigo-500/50 transform hover:scale-105"
+              className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-lg font-semibold rounded-xl hover:from-indigo-600 hover:to-purple-600 transition-all shadow-2xl hover:shadow-indigo-500/50 transform hover:scale-105 text-center"
             >
               Get Started Free
             </Link>
             <Link
               to="/login"
-              className="px-8 py-4 bg-white/10 backdrop-blur-md text-white text-lg font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all"
+              className="w-full sm:w-auto px-8 py-4 bg-white/10 backdrop-blur-md text-white text-lg font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all text-center"
             >
               Sign In
             </Link>
