@@ -1,4 +1,13 @@
-const API_BASE_URL = '/api';
+// Get API base URL from environment variable, fallback to localhost:5000
+const getApiBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    return envUrl.trim().replace(/\/+$/, ''); // Trim and remove trailing slashes
+  }
+  return 'http://localhost:5000';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 interface User {
   id: string;
@@ -100,7 +109,7 @@ const apiRequest = async <T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${API_BASE_URL}/api${endpoint}`, {
     ...options,
     headers,
   });

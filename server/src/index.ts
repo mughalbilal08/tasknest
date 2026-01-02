@@ -9,8 +9,31 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// CORS configuration
+const corsOptions = {
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    const allowedOrigins = [
+      'http://localhost:5173', // Vite default dev server
+      'http://localhost:3000', // Alternative dev port
+    ];
+
+    // Add CLIENT_URL from environment if set
+    if (process.env.CLIENT_URL) {
+      allowedOrigins.push(process.env.CLIENT_URL);
+    }
+
+    // Allow requests with no origin (like mobile apps or curl requests) or same-origin
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
